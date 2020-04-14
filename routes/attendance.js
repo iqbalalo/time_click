@@ -1,3 +1,4 @@
+const dateFormat = require('dateformat');
 const express = require("express");
 const router = express.Router();
 const db = require("../db/db");
@@ -6,6 +7,7 @@ const db = require("../db/db");
 router.get("/", (req, res) => {
     res.send("Attendance posts");
 });
+
 
 router.get("/users/:id", (req, res)=> {
     var id = req.params.id;
@@ -24,39 +26,44 @@ router.get("/users/:id", (req, res)=> {
         }
 
         if (rows.length > 0) {
-            res.send(rows);
+            res.json({msg: rows});
         } else {
-            res.send("No record found!");
+            res.json({msg:"No record found!"});
         }
     });
 
 });
 
 
-router.post("/", (req, res)=> {
+
+router.post("/", async (req, res)=> {
     var params = req.body;
 
     console.log(params);
 
     var user_id = params["user_id"];
-    var d = new Date();
-    var attn_time = d.getFullYear().toString() + d.getMonth().toString() + d.getDate().toString() + d.getHours().toString() + d.getMinutes().toString() + d.getSeconds().toString();
+    var now = new Date();
+    var now = dateFormat(now, "isoDateTime")
     var action = params["action"];
 
+    try {
+        var sql = "INSERT INTO attendance(attn_time, user_id, action) VALUES(?,?,?)";
 
-    db.run("INSERT INTO attendance(attn_time, user_id, action) VALUES(?,?,?)", [attn_time, user_id, action], function(err) {
-        if (err) {
-            console.log(err.message);
-            res.send(err.message, 500);
-        }
-        console.log("New record has been inserted");
-        res.send({"msg":"New record has been inserted"});
-    });
+        const result = await db.run(sql, [now, user_id, action]);
+        console.log(result);
+
+        res.json({msg:"New record has been inserted on " +  now});
+
+    } catch (e) {
+        console.log(e);
+        res.json({msg:e.message})
+    }
+
 
 });
 
 
-router.put("/", (req, res)=> {
+router.put("/", async (req, res)=> {
     var params = req.body;
 
     console.log(params);
@@ -65,35 +72,40 @@ router.put("/", (req, res)=> {
     var attn_time = params["attn_time"];
     var action = params["action"];
 
+    try {
+        var sql = "UPDATE attendance SET action=? WHERE user_id=? AND attn_time=?";
 
-    db.run("UPDATE attendance SET action=? WHERE user_id=? AND attn_time=?", [action, user_id, attn_time], function(err) {
-        if (err) {
-            console.log(err.message);
-            res.send(err.message, 500);
-        }
-        console.log("Record has been updated");
-        res.send({"msg": "Record has been updated"});
-    });
+        const result = await db.run(sql, [action, user_id, attn_time]);
+        console.log(result);
 
+        res.json({"msg": "Record has been updated"});
+    } catch (e) {
+        console.log(e);
+        res.json({msg:e.message})
+    }
 });
 
 
-router.delete("/", (req, res)=> {
+router.delete("/", async (req, res)=> {
     var params = req.body;
 
     console.log(params);
 
     var user_id = params["user_id"];
     var attn_time = params["attn_time"];
+    var action = params["action"];
 
-    db.run("DELETE FROM attendance WHERE user_id=? AND attn_time=?", [user_id, attn_time], function(err) {
-        if (err) {
-            console.log(err.message);
-            res.send(err.message, 500);
-        }
-        console.log("Record has been deleted");
-        res.send({"msg": "Record has been deleted"});
-    });
+    try {
+        var sql = "DELETE FROM attendance WHERE user_id=? AND attn_time=?";
+
+        const result = await db.run(sql, [user_id, attn_time]);
+        console.log(result);
+
+        res.json({"msg": "Record has been deleted"});
+    } catch (e) {
+        console.log(e);
+        res.json({msg:e.message})
+    }
 
 });
 
