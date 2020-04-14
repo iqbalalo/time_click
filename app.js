@@ -7,7 +7,7 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.json());
 
 app.get("/", (req, res)=> {
-    res.send("We are at home!");
+    res.send("Time attendance is ready!");
 });
 
 app.use("/attendance", attenRoute);
