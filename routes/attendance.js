@@ -35,6 +35,8 @@ router.get("/users/:id", async (req, res)=> {
         } else {
             res.json({msg: "No record found!"});
         }
+    }).catch(err => {
+        console.log(result);
     });
 
 });
