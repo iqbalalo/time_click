@@ -9,7 +9,7 @@ router.get("/", (req, res) => {
 });
 
 
-router.get("/users/:id", (req, res)=> {
+router.get("/users/:id", async (req, res)=> {
     var id = req.params.id;
 
     console.log("/attendance/users/" + id);
@@ -20,15 +20,20 @@ router.get("/users/:id", (req, res)=> {
         var sql = "SELECT * FROM attendance";
     }
 
-    db.all(sql, (err, rows) => {
-        if (err) {
-            throw err;
-        }
+    new Promise((resolve, reject) => {
+        db.all(sql, (err, rows) => {
 
-        if (rows.length > 0) {
-            res.json({msg: rows});
+            if (err) {
+                reject(err);
+            }
+            resolve(rows);
+        });
+    }).then(result => {
+        console.log(result);
+        if (result.length > 0) {
+            res.json(result);
         } else {
-            res.json({msg:"No record found!"});
+            res.json({msg: "No record found!"});
         }
     });
 
