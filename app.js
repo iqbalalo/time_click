@@ -7,14 +7,18 @@ const cors = require("cors");
 
 
 app.use(bodyParser.json());
-app.use(cors())
+app.use(cors());
+app.set("view engine", "ejs");
 
 
 app.get("/", (req, res)=> {
-    res.send("Time attendance is ready!");
+    const message = "Intelligent Attendance Management System";
+    res.render("index", {message: message});
 });
 
 app.use("/attendance", attenRoute);
 
 
-app.listen(3000);
+app.listen(3000,  () => {
+    console.log('app listening on port http://localhost:3000');
+});
