@@ -1,6 +1,8 @@
 # Time Click 
 ##### (under development)
 
+AI based time attendance and user prsense traker
+
 #### Steps
 
 - Clone repository
