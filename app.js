@@ -1,12 +1,12 @@
 const express = require("express");
-const app = express();
-
-const attenRoute = require("./routes/attendance");
+const usersRouter = require("./routes/users");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
+const app = express();
 
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 app.set("view engine", "ejs");
 
@@ -16,9 +16,10 @@ app.get("/", (req, res)=> {
     res.render("index", {message: message});
 });
 
-app.use("/attendance", attenRoute);
 
+app.use("/users", usersRouter);
 
 app.listen(3000,  () => {
     console.log('app listening on port http://localhost:3000');
 });
+

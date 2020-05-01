@@ -1,0 +1,19 @@
+version: '3.6'
+
+services:
+
+  # Postgres db service
+  # user: postgres, server: pgdb
+  pgdb:
+    image: postgres:11.4
+    environment:
+      POSTGRES_PASSWORD: Admin123
+      POSTGRES_DB: time_click
+    ports:
+      - "5432:5432"
+
+  # DB admin web interface
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"

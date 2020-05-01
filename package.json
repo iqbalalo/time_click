@@ -4,7 +4,8 @@
   "description": "time attendance",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "test": "jest --watch --coverage"
   },
   "author": "Iqbal Hossain",
   "license": "ISC",
@@ -14,7 +15,14 @@
     "dateformat": "^3.0.3",
     "ejs": "^3.0.2",
     "express": "^4.17.1",
+    "pg": "^8.0.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "jest": "^25.4.0",
     "nodemon": "^2.0.3",
-    "sqlite3": "^4.1.1"
+    "superagent": "^5.2.2",
+    "supertest": "^4.0.2"
   }
 }

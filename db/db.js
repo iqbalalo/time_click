@@ -1,10 +1,14 @@
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 
-const db = new sqlite3.Database("./db/time_click.db", (err) => {
-    if (err) {
-        return console.error(err.message);
-    }
-    console.log('Connected to the database.');
+const db = new Pool({
+    host: 'localhost',
+    user: 'postgres',
+    password: 'Admin123',
+    database: 'time_click',
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
 });
+
 
 module.exports = db;
