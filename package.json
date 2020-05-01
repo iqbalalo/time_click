@@ -4,7 +4,7 @@
   "description": "time attendance",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon app.js",
+    "start": "nodemon server.js",
     "test": "jest --watch --coverage"
   },
   "author": "Iqbal Hossain",

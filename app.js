@@ -19,7 +19,5 @@ app.get("/", (req, res)=> {
 
 app.use("/users", usersRouter);
 
-app.listen(3000,  () => {
-    console.log('app listening on port http://localhost:3000');
-});
+module.exports = app;
 
