@@ -1,7 +1,7 @@
 # Time Click 
-##### (under development)
+##### (under development in Node.js, Postgres, React, Python)
 
-AI based time attendance and user prsense traker
+AI based time attendance and user prsense tracker
 
 #### Steps
 
