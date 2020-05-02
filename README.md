@@ -1,10 +1,10 @@
 # Time Click 
-### Author: Iqbal Hossain
+#### Author: Iqbal Hossain
 
-##### Status: Prototype under development
-##### Technology: Node.js, Postgres, React, Python
+Status: Prototype under development<br/>
+Technology: Node.js, Postgres, React, Python
 
-AI based time attendance and user presence tracker
+## AI based time attendance and user presence tracker
 
 #### Description:
 
