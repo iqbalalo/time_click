@@ -3,17 +3,21 @@ const db = require("../db/db");
 class Users {
 
     id;
-    firstName;
-    lastName;
+    first_name;
+    last_name;
     dob;
     gender;
     phone;
     email;
     post;
-    address;
+    address1;
+    address2;
     country;
     tag;
-    acc_active;
+    acc_active = false;
+    acc_delete = false;
+    images;
+    devices;
 
     constructor(data) {
         if (data) {
@@ -22,52 +26,42 @@ class Users {
         this.table = "users";
     }
 
-    toJson = () => {
-        return {
-            id: this.id,
-            firstName: this.firstName,
-            lastName: this.lastName,
-            dob: this.dob,
-            gender: this.gender,
-            phone: this.phone,
-            email: this.email,
-            post: this.post,
-            address: this.address,
-            country: this.country,
-            tag: this.tag,
-            acc_active: this.active
-        }
+    generateSqlFieldText = () => {
+        let keys = "";
+        Object.keys(this.toDbFormat()).forEach(function (key) {
+            keys += key + ",";
+        });
+        keys = keys.slice(0, keys.length - 1);
+        return keys;
     };
+
 
     toDbFormat = () => {
         return {
             id: this.id,
-            first_name: this.firstName,
-            last_name: this.lastName,
+            first_name: this.first_name,
+            last_name: this.first_name,
             dob: this.dob,
             gender: this.gender,
             phone: this.phone,
             email: this.email,
             post: this.post,
-            address: this.address,
+            address1: this.address1,
+            address2: this.address2,
             country: this.country,
             tag: this.tag,
-            acc_active: this.active
+            acc_active: this.acc_active,
+            acc_delete: this.acc_delete,
+            images: this.images,
+            devices: this.devices
         }
     };
 
     findAll = async () => {
-
-        let sql = "SELECT id, first_name, last_name, dob, gender, phone, email, post, address, country, tag, acc_active, \n" +
-            "to_jsonb(ui) as images, \n" +
-            "to_jsonb(ud) as devices\n" +
-            "FROM users\n" +
-            "LEFT JOIN user_images ui on users.id = ui.user_id \n" +
-            "LEFT JOIN user_devices ud on users.id = ud.user_id";
+        let keys = this.generateSqlFieldText();
+        let sql = `SELECT ${keys} FROM ${this.table}`;
 
         try {
-
-            await db.connect();
 
             let result = await db.query(sql);
 
@@ -80,24 +74,31 @@ class Users {
     };
 
     findById = async (id) => {
-        let keys = "";
-        Object.keys(this.toDbFormat()).forEach(function (key) {
-            keys += key + ",";
-        });
-        keys = keys.slice(0, keys.length - 1);
+        let keys = this.generateSqlFieldText();
 
-
-        let sql = `SELECT ${keys}, \n` +
-            "to_jsonb(ui) as images, \n" +
-            "to_jsonb(ud) as devices\n" +
-            `FROM ${this.table}\n` +
-            "LEFT JOIN user_images ui on users.id = ui.user_id \n" +
-            "LEFT JOIN user_devices ud on users.id = ud.user_id\n" +
+        let sql = `SELECT ${keys} FROM ${this.table}\n` +
             `WHERE id = '${id}'`;
 
         try {
 
-            await db.connect();
+            let result = await db.query(sql);
+
+            return result.rows;
+
+        } catch (e) {
+            return e.message;
+        }
+
+    };
+
+    findByDevices = async (val) => {
+        let keys = this.generateSqlFieldText();
+
+        let sql = `SELECT ${keys} FROM ${this.table}\n` +
+            `WHERE devices::text ILIKE '%${val}%'`;
+
+        console.log(sql);
+        try {
 
             let result = await db.query(sql);
 
@@ -111,31 +112,21 @@ class Users {
 
     findByAny = async (condition) => {
 
-        let keys = "";
-        Object.keys(this.toDbFormat()).forEach(function (key) {
-            keys += key + ",";
-        });
-        keys = keys.slice(0, keys.length - 1);
-
-
+        let keys = this.generateSqlFieldText();
         let cons = "";
+
         Object.keys(condition).forEach(function (key) {
-            cons += key + (typeof (condition[key]) === "string" ? " ILIKE '" : "ILIKE") + condition[key] + (typeof (condition[key]) === "string" ? "'" : "") + " AND "
+            cons += key + (typeof (condition[key]) === "string" ? " ILIKE '" : "ILIKE") + "%" + condition[key] + "%" + (typeof (condition[key]) === "string" ? "'" : "") + " AND "
         });
         cons = cons.slice(0, cons.length - 4);
 
-        let sql = `SELECT ${keys} FROM ${this.table} `;
-
-        sql += "LEFT JOIN user_images ui on users.id = ui.user_id " +
-            "LEFT JOIN user_devices ud on users.id = ud.user_id\n";
+        let sql = `SELECT ${keys} FROM ${this.table} \n`;
 
         sql += `WHERE ${cons}`;
 
         console.log(sql);
 
         try {
-
-            await db.connect();
 
             let result = await db.query(sql);
 
@@ -155,7 +146,7 @@ class Users {
 
         Object.keys(this.toDbFormat()).forEach(function (key) {
             keys += key + ",";
-            values += (typeof (data[key]) === "string" ? `'${data[key]}',` : `${data[key]},`)
+            values += ((typeof (data[key]) === "string" || typeof (data[key]) === "object") ? `'${data[key]}',` : `${data[key]},`)
         });
 
         keys = keys.slice(0, keys.length - 1);
@@ -163,9 +154,9 @@ class Users {
 
         let sql = `INSERT INTO ${this.table} (${keys}) VALUES (${values})`;
 
-        try {
+        console.log(sql);
 
-            await db.connect();
+        try {
 
             let result = await db.query(sql);
 
@@ -179,21 +170,21 @@ class Users {
 
     updateUser = async (data) => {
 
-        let conditions = "";
+        let updateValues = "";
 
         Object.keys(data).forEach(function (key) {
             if (key !== "id") {
-                conditions += key + (typeof (data[key]) === "string" ? `='${data[key]}' AND ` : `=${data[key]} AND `);
+                updateValues += key + ((typeof (data[key]) === "string" || typeof (data[key]) === "object") ? `='${data[key]}' AND ` : `=${data[key]} AND `);
             }
         });
 
-        conditions = conditions.slice(0, conditions.length - 4);
+        updateValues = updateValues.slice(0, updateValues.length - 4);
 
-        let sql = `UPDATE ${this.table} SET ${conditions} WHERE id='${data.id}'`;
+        let sql = `UPDATE ${this.table} SET ${updateValues} WHERE id='${data.id}'`;
+
+        console.log(sql);
 
         try {
-
-            await db.connect();
 
             let result = await db.query(sql);
 
@@ -202,8 +193,24 @@ class Users {
         } catch (e) {
             return e.message;
         }
+    };
 
-    }
+    deleteOrRestoreUser = async (id, action) => {
+
+        let sql = `UPDATE ${this.table} SET acc_delete=${action} WHERE id='${id}'`;
+
+        console.log(sql);
+
+        try {
+
+            let result = await db.query(sql);
+
+            return result.rowCount > 0;
+
+        } catch (e) {
+            return e.message;
+        }
+    };
 }
 
 module.exports = Users;

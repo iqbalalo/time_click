@@ -7,8 +7,9 @@ const db = new Pool({
     database: 'time_click',
     max: 5,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 3000
 });
 
+db.connect();
 
 module.exports = db;

@@ -1,5 +1,6 @@
 const express = require("express");
 const usersRouter = require("./routes/users");
+const presenceRouter = require("./routes/presence");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
@@ -18,6 +19,7 @@ app.get("/", (req, res)=> {
 
 
 app.use("/users", usersRouter);
+app.use("/presence", presenceRouter);
 
 module.exports = app;
 
