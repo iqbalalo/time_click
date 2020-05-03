@@ -1,8 +1,10 @@
 const dateFormat = require('dateformat');
 const Users = require("../models/users");
 const express = require("express");
+const Utils = require("../utils/utils");
 
 const router = express.Router();
+const utils = new Utils();
 
 
 router.get("/", (req, res) => {
@@ -10,10 +12,10 @@ router.get("/", (req, res) => {
 
     userModel.findAll()
         .then(result => {
-            res.json({"message": result});
+            return res.json({"message": result});
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": []});
+        return res.status(500).json({"message": []});
     })
 });
 
@@ -26,11 +28,11 @@ router.get("/:id", (req, res)=> {
     userModel.findById(id)
         .then(result => {
 
-            res.json({"message": result});
+            return res.json({"message": result});
 
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": []});
+        return res.status(500).json({"message": []});
     })
 
 });
@@ -40,7 +42,7 @@ router.get("/:field/:val", (req, res)=> {
     let val = req.params.val;
 
     if (field === "images") {
-        res.status(401).json({"message": "Invalid filter option '" + field + "'"})
+        return res.status(401).json({"message": "Invalid filter option '" + field + "'"})
     }
 
     let userModel = new Users();
@@ -54,11 +56,11 @@ router.get("/:field/:val", (req, res)=> {
 
         find.then(result => {
 
-            res.json({"message": result});
+            return res.json({"message": result});
 
         }).catch(e => {
             console.log(e);
-            res.status(500).json({"message": []});
+            return res.status(500).json({"message": []});
     })
 
 });
@@ -66,28 +68,34 @@ router.get("/:field/:val", (req, res)=> {
 router.post("/", (req, res)=> {
     let params = req.body;
 
+    let isInvalid = utils.checkParamValidation(["first_name", "dob", "gender", "password"], params);
+
+    if (isInvalid) {
+        return res.json({"message": isInvalid});
+    }
+
     let now = new Date();
     now = dateFormat(now, "isoDateTime");
     now = now.split("-").join("").split(":").join("").split("T").join("").substr(0, 14);
-
-    params["first_name"] = params.first_name ? params.first_name : res.status(401).json({"message": "First Name is required!"});
     params["id"] = params.first_name.substr(0,1) + (params.last_name ? params.last_name.substr(0,1) : params.first_name.slice(1,2)) + now;
-    params["dob"] = params.dob ? params.dob : res.status(401).json({"message": "Date of birth is required!"});
-    params["gender"] = params.gender ? params.gender : res.status(401).json({"message": "Gender is required!"});
     params["devices"] = params.devices ? JSON.stringify(params.devices) : null;
-
+    params["password"] = utils.generateHash(params.password);
+    params["activation_code"] = utils.generateId(6);
 
     let userModel = new Users(params);
 
-    userModel.insertUser()
+    userModel.insertUser(userModel.dbModel())
         .then(result => {
-
-            res.json({"message": (result ? "User record was inserted!": Error("User record was not inserted!"))});
+            if (result) {
+                return res.json({"message": "User record was inserted!"});
+            } else {
+                return res.status(500).json({"message": "User record was not inserted!"});
+            }
 
         }).catch(e => {
-        console.log(e);
-        res.status(500).json({"message": e.message});
-    })
+            console.log(e);
+            return res.status(500).json({"message": e.message});
+        })
 });
 
 
@@ -95,12 +103,16 @@ router.put("/", (req, res)=> {
     let params = req.body;
 
     if (!params.id) {
-        res.status(401).json({"message": "Id is required!"});
+        return res.status(401).json({"message": "Id is required!"});
+    }
+
+    if (params.password) {
+        return res.status(403).json({"message": "Invalid api request!"});
     }
 
     Object.keys(params).forEach(key => {
         if (params[key] === "") {
-            res.status(401).json({"message": `${key} is required!`});
+            return res.status(401).json({"message": `${key} is required!`});
         }
 
         if (typeof params[key] === "object") {
@@ -113,11 +125,57 @@ router.put("/", (req, res)=> {
 
     userModel.updateUser(params)
         .then(result => {
-            res.status(200).json({"message": (result ? "User record was updated!": Error("User record was not updated!"))});
+            if (result) {
+                return res.json({"message": "User record was updated!"});
+            } else {
+                return res.status(500).json({"message": "User record was not updated!"});
+            }
+        }).catch(e => {
+            console.log(e);
+            return res.status(500).json({"message": e.message});
+        });
+});
+
+
+router.post("/change_password", async (req, res) => {
+    let params = req.body;
+
+    if (!params.id) {
+        return res.status(401).json({"message": "Id is required!"});
+    }
+
+    if (!params.old_password && !params.new_password) {
+        return res.status(401).json({"message": "Old password and new password are required!"});
+    }
+
+
+    let userModel = new Users();
+
+    let old_hash = await userModel.getUserPasswordHashById(params.id);
+
+    let isPasswordMatched = utils.matchHash(params.old_password, old_hash.password);
+
+    if (!isPasswordMatched) {
+        return res.status(403).json({"message": "Old password was not matched!"});
+    }
+
+    params = {
+        "id": params.id,
+        "password": utils.generateHash(params.new_password)
+    };
+
+
+    userModel.updateUser(params)
+        .then(result => {
+            if (result) {
+                return res.json({"message": "Password was updated!"});
+            } else {
+                return res.status(500).json({"message": "Password was not updated!"});
+            }
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": e.message});
-    })
+        return res.status(500).json({"message": e.message});
+    });
 });
 
 
@@ -129,10 +187,14 @@ router.delete("/:id", (req, res)=> {
     // action true means Delete
     userModel.deleteOrRestoreUser(id, true)
         .then(result => {
-            res.status(200).json({"message": (result ? "User record deleted!": Error("User record was not updated!"))});
+            if (result) {
+                return res.json({"message": "User record was deleted!"});
+            } else {
+                return res.status(500).json({"message": "User record was not deleted!"});
+            }
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": e.message});
+        return res.status(500).json({"message": e.message});
     })
 });
 
@@ -145,10 +207,14 @@ router.put("/restore/:id", (req, res)=> {
     // action false means restore
     userModel.deleteOrRestoreUser(id, false)
         .then(result => {
-            res.status(200).json({"message": (result ? "User record restored!": Error("User record was not updated!"))});
+            if (result) {
+                return res.json({"message": "User record was restored!"});
+            } else {
+                return res.status(500).json({"message": "User record was not restored!"});
+            }
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": e.message});
+        return res.status(500).json({"message": e.message});
     })
 });
 

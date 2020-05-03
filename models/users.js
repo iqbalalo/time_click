@@ -2,22 +2,24 @@ const db = require("../db/db");
 
 class Users {
 
-    id;
-    first_name;
-    last_name;
-    dob;
-    gender;
-    phone;
-    email;
-    post;
-    address1;
-    address2;
-    country;
-    tag;
-    acc_active = false;
-    acc_delete = false;
-    images;
-    devices;
+    // id;
+    // first_name;
+    // last_name;
+    // dob;
+    // gender;
+    // phone;
+    // email;
+    // post;
+    // address1;
+    // address2;
+    // country;
+    // tag;
+    // acc_active = false;
+    // acc_delete = false;
+    // images;
+    // devices;
+    // password;
+    // activation_code;
 
     constructor(data) {
         if (data) {
@@ -28,24 +30,47 @@ class Users {
 
     generateSqlFieldText = () => {
         let keys = "";
-        Object.keys(this.toDbFormat()).forEach(function (key) {
+        Object.keys(this.dbSelect()).forEach(function (key) {
             keys += key + ",";
         });
         keys = keys.slice(0, keys.length - 1);
         return keys;
     };
 
-
-    toDbFormat = () => {
+    dbModel = () => {
         return {
             id: this.id,
             first_name: this.first_name,
-            last_name: this.first_name,
+            last_name: this.last_name ? this.last_name : null,
+            dob: this.dob,
+            gender: this.gender,
+            phone: this.phone ? this.phone : null,
+            email: this.email ? this.email : null,
+            post_code: this.post_code ? this.post_code : null ,
+            address1: this.address1 ? this.address1 : null,
+            address2: this.address2 ? this.address2 : null,
+            country: this.country ? this.country : null,
+            tag: this.tag ? this.tag : null,
+            acc_active: false,
+            acc_delete: false,
+            images: this.images ? this.images : null,
+            devices: this.devices ? this.devices : null,
+            password: this.password,
+            activation_code: this.activation_code
+        }
+    };
+
+
+    dbSelect = () => {
+        return {
+            id: this.id,
+            first_name: this.first_name,
+            last_name: this.last_name,
             dob: this.dob,
             gender: this.gender,
             phone: this.phone,
             email: this.email,
-            post: this.post,
+            post_code: this.pos_code,
             address1: this.address1,
             address2: this.address2,
             country: this.country,
@@ -84,6 +109,23 @@ class Users {
             let result = await db.query(sql);
 
             return result.rows;
+
+        } catch (e) {
+            return e.message;
+        }
+
+    };
+
+    getUserPasswordHashById = async (id) => {
+
+        let sql = `SELECT password FROM ${this.table}\n` +
+            `WHERE id = '${id}'`;
+
+        try {
+
+            let result = await db.query(sql);
+
+            return result.rows[0];
 
         } catch (e) {
             return e.message;
@@ -138,15 +180,14 @@ class Users {
 
     };
 
-    insertUser = async () => {
+    insertUser = async (data) => {
 
         let keys = "";
         let values = "";
-        let data = this.toDbFormat();
 
-        Object.keys(this.toDbFormat()).forEach(function (key) {
+        Object.keys(data).forEach(function (key) {
             keys += key + ",";
-            values += ((typeof (data[key]) === "string" || typeof (data[key]) === "object") ? `'${data[key]}',` : `${data[key]},`)
+            values += ((typeof (data[key]) === "string" || typeof (data[key]) === "object") && data[key] !== null && data[key] !== 'boolean' ? `'${data[key]}',` : `${data[key]},`)
         });
 
         keys = keys.slice(0, keys.length - 1);
@@ -174,7 +215,7 @@ class Users {
 
         Object.keys(data).forEach(function (key) {
             if (key !== "id") {
-                updateValues += key + ((typeof (data[key]) === "string" || typeof (data[key]) === "object") ? `='${data[key]}' AND ` : `=${data[key]} AND `);
+                updateValues += key + ((typeof (data[key]) === "string" || typeof (data[key]) === "object") && data[key] !== null && data[key] !== 'boolean' ? `='${data[key]}' AND ` : `=${data[key]} AND `);
             }
         });
 
