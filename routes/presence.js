@@ -14,11 +14,11 @@ router.get("/user/:user_id/year/:year", (req, res)=> {
     presenceModel.findByUserIdAndYear(user_id, year)
         .then(result => {
 
-            res.json({"message": result});
+            return res.json({"message": result});
 
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": []});
+        return res.status(500).json({"message": []});
     })
 
 });
@@ -33,11 +33,11 @@ router.get("/user/:user_id/year/:year/month/:month", (req, res)=> {
     presenceModel.findByUserIdAndYearAndMonth(user_id, year, month)
         .then(result => {
 
-            res.json({"message": result});
+            return res.json({"message": result});
 
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": []});
+        return res.status(500).json({"message": []});
     })
 
 });
@@ -47,7 +47,7 @@ router.post("/", (req, res)=> {
 
     Object.keys(params).forEach(key => {
         if (params[key] === "" && key !== "user_time"){
-            res.status(401).json({"message": `${key} is required!`});
+            return res.status(401).json({"message": `${key} is required!`});
         }
     });
 
@@ -60,11 +60,11 @@ router.post("/", (req, res)=> {
     presenceModel.insertPresence()
         .then(result => {
 
-            res.json({"message": (result ? "Presence record was inserted!": Error("Presence record was not inserted!"))});
+            return res.json({"message": (result ? "Presence record was inserted!": Error("Presence record was not inserted!"))});
 
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": e.message});
+        return res.status(500).json({"message": e.message});
     })
 });
 
@@ -73,7 +73,7 @@ router.put("/", (req, res)=> {
     let params = req.body;
 
     if (!params.user_id && !params.action_time && !params.action) {
-        res.status(401).json({"message": "user_id, action_time and action information are required!"});
+        return res.status(401).json({"message": "user_id, action_time and action information are required!"});
     }
 
     let presenceModel = new Presence();
@@ -81,11 +81,11 @@ router.put("/", (req, res)=> {
     presenceModel.updatePresence(params)
         .then(result => {
 
-            res.json({"message": (result ? "Presence record was updated!": Error("Presence record was not updated!"))});
+            return res.json({"message": (result ? "Presence record was updated!": Error("Presence record was not updated!"))});
 
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": e.message});
+        return res.status(500).json({"message": e.message});
     });
 });
 
@@ -105,11 +105,11 @@ router.delete("/user/:user_id/time/:action_time", (req, res)=> {
     presenceModel.updatePresence(data)
         .then(result => {
 
-            res.json({"message": (result ? "Presence record was deleted!": Error("Presence record was not deleted!"))});
+            return res.json({"message": (result ? "Presence record was deleted!": Error("Presence record was not deleted!"))});
 
         }).catch(e => {
         console.log(e);
-        res.status(500).json({"message": e.message});
+        return res.status(500).json({"message": e.message});
     });
 });
 

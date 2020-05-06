@@ -3,6 +3,7 @@ const usersRouter = require("./routes/users");
 const presenceRouter = require("./routes/presence");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const authorize = require("./utils/authorization");
 
 const app = express();
 
@@ -17,6 +18,17 @@ app.get("/", (req, res)=> {
     res.render("index", {message: message});
 });
 
+app.post("/token", (req, res) => {
+    let params = req.body;
+
+    const payload = {
+        id: params.id,
+        scope: ["read"]
+    };
+
+    const token = jwt.sign(payload, config.SECRET);
+    return res.json({ message: token });
+});
 
 app.use("/users", usersRouter);
 app.use("/presence", presenceRouter);

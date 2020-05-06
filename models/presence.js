@@ -2,13 +2,13 @@ const db = require("../db/db");
 
 class Presence {
 
-    action_time;
-    user_id;
-    action;
-
     constructor(data) {
         if (data) {
             Object.assign(this, data);
+        } else {
+            this.action_time=null;
+            this.user_id=null;
+            this.action=null;
         }
         this.table = "presence";
     }

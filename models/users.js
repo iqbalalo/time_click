@@ -2,29 +2,29 @@ const db = require("../db/db");
 
 class Users {
 
-    // id;
-    // first_name;
-    // last_name;
-    // dob;
-    // gender;
-    // phone;
-    // email;
-    // post;
-    // address1;
-    // address2;
-    // country;
-    // tag;
-    // acc_active = false;
-    // acc_delete = false;
-    // images;
-    // devices;
-    // password;
-    // activation_code;
-
     constructor(data) {
         if (data) {
             Object.assign(this, data);
+        } else {
+            this.id = null;
+            this.first_name = null;
+            this.last_name = null;
+            this.dob = null;
+            this.gender = null;
+            this.phone = null;
+            this.email = null;
+            this.post_code = null;
+            this.address1 = null;
+            this.address2 = null;
+            this.country = null;
+            this.images = null;
+            this.devices = null;
+            this.password = null;
+            this.tag = null;
+            this.account_delete = false;
+            this.activation_code = null;
         }
+
         this.table = "users";
     }
 
@@ -50,12 +50,11 @@ class Users {
             address1: this.address1 ? this.address1 : null,
             address2: this.address2 ? this.address2 : null,
             country: this.country ? this.country : null,
-            tag: this.tag ? this.tag : null,
-            acc_active: false,
-            acc_delete: false,
             images: this.images ? this.images : null,
             devices: this.devices ? this.devices : null,
             password: this.password,
+            tag: this.tag ? this.tag : null,
+            account_delete: false,
             activation_code: this.activation_code
         }
     };
@@ -74,11 +73,10 @@ class Users {
             address1: this.address1,
             address2: this.address2,
             country: this.country,
-            tag: this.tag,
-            acc_active: this.acc_active,
-            acc_delete: this.acc_delete,
             images: this.images,
-            devices: this.devices
+            devices: this.devices,
+            tag: this.tag,
+            account_delete: this.account_delete,
         }
     };
 
@@ -118,8 +116,25 @@ class Users {
 
     getUserPasswordHashById = async (id) => {
 
-        let sql = `SELECT password FROM ${this.table}\n` +
+        let sql = `SELECT id, password FROM ${this.table}\n` +
             `WHERE id = '${id}'`;
+
+        try {
+
+            let result = await db.query(sql);
+
+            return result.rows[0];
+
+        } catch (e) {
+            return e.message;
+        }
+
+    };
+
+    getUserPasswordHashByEmail = async (email) => {
+
+        let sql = `SELECT id, password FROM ${this.table}\n` +
+            `WHERE email = '${email}'`;
 
         try {
 
@@ -238,7 +253,7 @@ class Users {
 
     deleteOrRestoreUser = async (id, action) => {
 
-        let sql = `UPDATE ${this.table} SET acc_delete=${action} WHERE id='${id}'`;
+        let sql = `UPDATE ${this.table} SET account_delete=${action} WHERE id='${id}'`;
 
         console.log(sql);
 

@@ -1,7 +1,10 @@
 const dateFormat = require('dateformat');
 const Users = require("../models/users");
+const UsersPolicy = require("../models/users_policy");
 const express = require("express");
 const Utils = require("../utils/utils");
+const config = require("../utils/config");
+
 
 const router = express.Router();
 const utils = new Utils();
@@ -20,7 +23,7 @@ router.get("/", (req, res) => {
 });
 
 
-router.get("/:id", (req, res)=> {
+router.get("/:id", (req, res) => {
     let id = req.params.id;
 
     let userModel = new Users();
@@ -37,7 +40,7 @@ router.get("/:id", (req, res)=> {
 
 });
 
-router.get("/:field/:val", (req, res)=> {
+router.get("/:field/:val", (req, res) => {
     let field = req.params.field;
     let val = req.params.val;
 
@@ -54,52 +57,76 @@ router.get("/:field/:val", (req, res)=> {
         find = userModel.findByAny({[field]: val})
     }
 
-        find.then(result => {
+    find.then(result => {
 
-            return res.json({"message": result});
+        return res.json({"message": result});
 
-        }).catch(e => {
-            console.log(e);
-            return res.status(500).json({"message": []});
+    }).catch(e => {
+        console.log(e);
+        return res.status(500).json({"message": []});
     })
 
 });
 
-router.post("/", (req, res)=> {
-    let params = req.body;
+router.post("/", async (req, res) => {
 
-    let isInvalid = utils.checkParamValidation(["first_name", "dob", "gender", "password"], params);
+    try {
+        let params = req.body;
 
-    if (isInvalid) {
-        return res.json({"message": isInvalid});
+        let isInvalid = utils.checkParamValidation(["first_name", "dob", "gender", "password"], params);
+
+        if (isInvalid) {
+            return res.json({"message": isInvalid});
+        }
+
+        let now = new Date();
+        now = dateFormat(now, "isoDateTime");
+        now = now.split("-").join("").split(":").join("").split("T").join("").substr(0, 14);
+        params["id"] = params.first_name.substr(0, 1) + (params.last_name ? params.last_name.substr(0, 1) : params.first_name.slice(1, 2)) + now;
+        params["devices"] = params.devices ? JSON.stringify(params.devices) : null;
+        params["password"] = utils.generateHash(params.password);
+        params["activation_code"] = utils.generateId(6);
+
+        let userModel = new Users(params);
+
+        let result = await userModel.insertUser(userModel.dbModel());
+
+        if (!result) {
+            return res.status(500).json({"message": "User record was not inserted!"});
+        }
+
+        // Create new user policy for new user. First generate a initial token and insert data to db
+
+        let payload = {
+            "date": dateFormat(new Date(), "isoDateTime"),
+            "id": params.id,
+            "privilege": config.USER_DEFAULT_PRIVILEGE
+        };
+
+        const token = utils.generateToken(payload, config.SECRET);
+
+        let userPolicyModel = new UsersPolicy();
+
+        result = await userPolicyModel.insertUserPolicy({
+            "user_id": params.id,
+            "token": token,
+            "privilege": config.USER_DEFAULT_PRIVILEGE
+        });
+
+        if (!result) {
+            return res.status(500).json({"message": "User record was not inserted!"});
+        }
+
+        return res.json({"message": "User record was inserted!"});
+
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({"message": "User record was not inserted!"});
     }
-
-    let now = new Date();
-    now = dateFormat(now, "isoDateTime");
-    now = now.split("-").join("").split(":").join("").split("T").join("").substr(0, 14);
-    params["id"] = params.first_name.substr(0,1) + (params.last_name ? params.last_name.substr(0,1) : params.first_name.slice(1,2)) + now;
-    params["devices"] = params.devices ? JSON.stringify(params.devices) : null;
-    params["password"] = utils.generateHash(params.password);
-    params["activation_code"] = utils.generateId(6);
-
-    let userModel = new Users(params);
-
-    userModel.insertUser(userModel.dbModel())
-        .then(result => {
-            if (result) {
-                return res.json({"message": "User record was inserted!"});
-            } else {
-                return res.status(500).json({"message": "User record was not inserted!"});
-            }
-
-        }).catch(e => {
-            console.log(e);
-            return res.status(500).json({"message": e.message});
-        })
 });
 
 
-router.put("/", (req, res)=> {
+router.put("/", (req, res) => {
     let params = req.body;
 
     if (!params.id) {
@@ -131,11 +158,67 @@ router.put("/", (req, res)=> {
                 return res.status(500).json({"message": "User record was not updated!"});
             }
         }).catch(e => {
-            console.log(e);
-            return res.status(500).json({"message": e.message});
-        });
+        console.log(e);
+        return res.status(500).json({"message": e.message});
+    });
 });
 
+router.post("/login", async (req, res) => {
+    try {
+
+        let params = req.body;
+
+        let isInValid = utils.checkParamValidation(["email", "password"], params);
+
+        if (isInValid) {
+            return res.status(401).json({"message": `${isInValid} is required!`});
+        }
+
+        let userModel = new Users();
+
+        let hash = await userModel.getUserPasswordHashByEmail(params.email);
+
+        if (!hash) {
+            return res.status(401).json({"message": `ID and Password were not matched!`});
+        }
+
+        let isPasswordMatched = utils.matchHash(params.password, hash.password);
+
+        if (!isPasswordMatched) {
+            return res.status(403).json({"message": "ID and Password were not matched!"});
+        }
+
+        // create and update new token
+
+        let userPolicyModel = new UsersPolicy();
+
+        let userPolicy = await userPolicyModel.findByUserPolicyUserId(hash.id);
+
+        if (!userPolicy) {
+            return res.status(500).json({"message": "Could not login, Try again!"});
+        }
+
+        let payload = {
+            "date": dateFormat(new Date(), "isoDateTime"),
+            "id": userPolicy.user_id,
+            "privilege": userPolicy.privilege
+        };
+
+        const token = utils.generateToken(payload, config.SECRET);
+
+        let resultUpdatePolicy = await userPolicyModel.updateUserPolicy({"token": token, "user_id": userPolicy.user_id});
+
+        if (!resultUpdatePolicy) {
+            return res.status(500).json({"message": "Could not login, Try again!"});
+        }
+        return res.json({"message": "Login successful", "token": token})
+
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({"message": "Could not login, Try again!"});
+    }
+
+});
 
 router.post("/change_password", async (req, res) => {
     let params = req.body;
@@ -179,7 +262,7 @@ router.post("/change_password", async (req, res) => {
 });
 
 
-router.delete("/:id", (req, res)=> {
+router.delete("/:id", (req, res) => {
     let id = req.params.id;
 
     let userModel = new Users();
@@ -199,7 +282,7 @@ router.delete("/:id", (req, res)=> {
 });
 
 
-router.put("/restore/:id", (req, res)=> {
+router.put("/restore/:id", (req, res) => {
     let id = req.params.id;
 
     let userModel = new Users();

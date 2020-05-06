@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
 
 class Utils {
 
@@ -18,6 +19,11 @@ class Utils {
 
     matchHash = (text, hash) => {
         return bcrypt.compareSync(text, hash)
+    };
+
+    generateToken = (payload, secret) => {
+        const token = jwt.sign(payload, secret);
+        return token;
     };
 
     checkParamValidation = (validate_param, data) => {
