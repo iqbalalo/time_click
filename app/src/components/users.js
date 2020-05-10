@@ -3,7 +3,7 @@ import userData from "./data";
 import EmailCompose from "./emailCompose";
 import SmsCompose from "./smsCompose";
 import CallCompose from "./callCompose";
-import User from "./user";
+import UserThumb from "./user_thumb";
 
 class Users extends React.Component {
   state = {
@@ -56,7 +56,7 @@ class Users extends React.Component {
   render() {
     // Make user list
     const userComponents = this.state.users.map((user) => (
-      <User
+      <UserThumb
         key={user.id}
         userData={user}
         emailClick={this.emailClick}
@@ -67,9 +67,9 @@ class Users extends React.Component {
 
     return (
       <div style={{ textAlign: "center" }}>
-        <h6 style={{ margin: "1em" }}>
+        <h2 style={{ margin: "1em" }}>
           ユーザ一覧 ({this.state.users.length})
-        </h6>
+        </h2>
         <div className="d-flex flex-row flex-wrap justify-content-center">
           {userComponents}{" "}
           {Array(7)

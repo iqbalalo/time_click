@@ -20,3 +20,7 @@ You are welcome to improve it. Just clone and create your branch. I will update 
 - Run following commands both of the directories (api, app) separetly -
 - Run `npm init`
 - Run `npm start`
+
+#### Sample Image
+
+![](sample.png)

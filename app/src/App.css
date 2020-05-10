@@ -7,7 +7,6 @@
   pointer-events: none;
 }
 
-
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -30,4 +29,103 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.Nav {
+  background: #ffffff;
+  padding: 1em;
+  margin-bottom: 2em;
+  -webkit-box-shadow: 0px 2px 6px -2px rgba(0, 0, 0, 0.76);
+  -moz-box-shadow: 0px 2px 6px -2px rgba(0, 0, 0, 0.76);
+  box-shadow: 0px 2px 6px -2px rgba(0, 0, 0, 0.76);
+}
+
+.Nav li {
+  display: inline-block;
+  padding: 0.5em;
+  text-align: center;
+  margin: 0 0.5em;
+  min-width: 12%;
+  border-radius: 12px;
+  background: rgba(0, 123, 255, 0.11);
+  border: 1px dashed;
+  color: #155889;
+}
+
+.Nav li i {
+  font-size: 1.5rem;
+  display: block;
+}
+
+.UserThumbLink:hover {
+  text-decoration: none;
+}
+
+.Todays-Presence-Info {
+  border: 0.5px dashed;
+  padding: 0.5em;
+  margin: 1em;
+}
+
+.Todays-Presence-Info-Image-Holder {
+  background: #849ce2d6;
+}
+
+.Todays-Presence-Info-Image-Holder img {
+  height: 96px;
+  width: 96px;
+}
+
+.Todays-Presence-Info-Image-Holder span {
+  display: block;
+  height: 96px;
+  width: 96px;
+  line-height: 96px;
+}
+
+.Todays-Presence-Info-Name {
+  padding: 5px;
+  line-height: 96px;
+  background: #ebebeb;
+  text-align: center;
+  min-width: 150px;
+}
+
+.Todays-Presence-Info-ActionTime-Holder {
+  padding: 0 1em;
+}
+
+.Todays-Presence-Info-ActionTime {
+  border-radius: 6px;
+  margin: 0 0.25em 0.5em;
+  display: inline-table;
+}
+
+.Todays-Presence-Info-ActionTime-Time {
+  background: #849ce2d6;
+  padding: 0.6em;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  display: inline-block;
+}
+
+.Todays-Presence-Info-ActionTime-Action {
+  padding: 0.6em;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  display: inline-block;
+  text-align: center;
+  min-width: 50px;
+}
+
+.Action-In {
+  background: #b3e68edb;
+}
+
+.Action-Out {
+  background: #ffbbcadb;
+}
+
+.Action-Unknown {
+  background: #cfc9c9db;
 }

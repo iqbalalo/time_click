@@ -1,130 +1,141 @@
 const db = require("../db/db");
 
 class Presence {
-
-    constructor(data) {
-        if (data) {
-            Object.assign(this, data);
-        } else {
-            this.action_time=null;
-            this.user_id=null;
-            this.action=null;
-        }
-        this.table = "presence";
+  constructor(data) {
+    if (data) {
+      Object.assign(this, data);
+    } else {
+      this.action_time = null;
+      this.user_id = null;
+      this.action = null;
     }
+    this.table = "presence";
+  }
 
-    generateSqlFieldText = () => {
-        let keys = "";
-        Object.keys(this.toDbFormat()).forEach(function (key) {
-            keys += key + ",";
-        });
-        keys = keys.slice(0, keys.length - 1);
-        return keys;
+  generateSqlFieldText = () => {
+    let keys = "";
+    Object.keys(this.toDbFormat()).forEach(function (key) {
+      keys += key + ",";
+    });
+    keys = keys.slice(0, keys.length - 1);
+    return keys;
+  };
+
+  toDbFormat = () => {
+    return {
+      action_time: this.action_time,
+      user_id: this.user_id,
+      action: this.action,
     };
+  };
 
+  findByDate = async (year, month, day) => {
+    let keys = this.generateSqlFieldText();
 
-    toDbFormat = () => {
-        return {
-            action_time: this.action_time,
-            user_id: this.user_id,
-            action: this.action
-        }
-    };
+    let sql =
+      `SELECT user_id, json_agg(json_build_object('date_time', action_time, 'action', action)) as actions FROM ${this.table}\n` +
+      `WHERE extract(year FROM CAST(action_time AS DATE)) = ${year} AND extract(month FROM CAST(action_time AS DATE)) = ${month}
+      AND extract(day FROM CAST(action_time AS DATE)) = ${day} GROUP BY user_id`;
 
+    console.log(sql);
+    try {
+      let result = await db.query(sql);
 
-    findByUserIdAndYear = async (userId, year) => {
-        let keys = this.generateSqlFieldText();
+      return result.rows;
+    } catch (e) {
+      return e.message;
+    }
+  };
 
-        let sql = `SELECT ${keys} FROM ${this.table}\n` +
-            `WHERE user_id = '${userId}' AND extract(year FROM CAST(action_time AS DATE)) = ${year}`;
+  findByUserIdAndYear = async (userId, year) => {
+    let keys = this.generateSqlFieldText();
 
-        console.log(sql);
-        try {
+    let sql =
+      `SELECT ${keys} FROM ${this.table}\n` +
+      `WHERE user_id = '${userId}' AND extract(year FROM CAST(action_time AS DATE)) = ${year}`;
 
-            let result = await db.query(sql);
+    console.log(sql);
+    try {
+      let result = await db.query(sql);
 
-            return result.rows;
+      return result.rows;
+    } catch (e) {
+      return e.message;
+    }
+  };
 
-        } catch (e) {
-            return e.message;
-        }
+  findByUserIdAndYearAndMonth = async (userId, year, month) => {
+    let keys = this.generateSqlFieldText();
 
-    };
+    let sql =
+      `SELECT ${keys} FROM ${this.table}\n` +
+      `WHERE user_id = '${userId}' AND extract(year FROM CAST(action_time AS DATE)) = ${year} AND extract(month FROM CAST(action_time AS DATE)) = ${month}`;
 
-    findByUserIdAndYearAndMonth = async (userId, year, month) => {
-        let keys = this.generateSqlFieldText();
+    try {
+      let result = await db.query(sql);
 
-        let sql = `SELECT ${keys} FROM ${this.table}\n` +
-            `WHERE user_id = '${userId}' AND extract(year FROM CAST(action_time AS DATE)) = ${year} AND extract(month FROM CAST(action_time AS DATE)) = ${month}`;
+      return result.rows;
+    } catch (e) {
+      return e.message;
+    }
+  };
 
-        try {
+  insertPresence = async () => {
+    let keys = "";
+    let values = "";
+    let data = this.toDbFormat();
 
-            let result = await db.query(sql);
+    Object.keys(this.toDbFormat()).forEach(function (key) {
+      keys += key + ",";
+      values +=
+        typeof data[key] === "string" || typeof data[key] === "object"
+          ? `'${data[key]}',`
+          : `${data[key]},`;
+    });
 
-            return result.rows;
+    keys = keys.slice(0, keys.length - 1);
+    values = values.slice(0, values.length - 1);
 
-        } catch (e) {
-            return e.message;
-        }
+    let sql = `INSERT INTO ${this.table} (${keys}) VALUES (${values})`;
 
-    };
+    console.log(sql);
 
-    insertPresence = async () => {
+    try {
+      let result = await db.query(sql);
 
-        let keys = "";
-        let values = "";
-        let data = this.toDbFormat();
+      return result.rowCount > 0;
+    } catch (e) {
+      return e.message;
+    }
+  };
 
-        Object.keys(this.toDbFormat()).forEach(function (key) {
-            keys += key + ",";
-            values += ((typeof (data[key]) === "string" || typeof (data[key]) === "object") ? `'${data[key]}',` : `${data[key]},`)
-        });
+  updatePresence = async (data) => {
+    let updateValues = "";
 
-        keys = keys.slice(0, keys.length - 1);
-        values = values.slice(0, values.length - 1);
+    Object.keys(data).forEach(function (key) {
+      if (key !== "user_id" && key !== "action_time") {
+        updateValues +=
+          key +
+          (typeof data[key] === "string" || typeof data[key] === "object"
+            ? `='${data[key]}' AND `
+            : `=${data[key]} AND `);
+      }
+    });
 
-        let sql = `INSERT INTO ${this.table} (${keys}) VALUES (${values})`;
+    updateValues = updateValues.slice(0, updateValues.length - 4);
 
-        console.log(sql);
+    let sql = `UPDATE ${this.table} SET ${updateValues} WHERE user_id='${data.user_id}' AND action_time='${data.action_time}'`;
 
-        try {
+    console.log(sql);
 
-            let result = await db.query(sql);
+    try {
+      let result = await db.query(sql);
 
-            return result.rowCount > 0;
-
-        } catch (e) {
-            return e.message;
-        }
-
-    };
-
-    updatePresence = async (data) => {
-
-        let updateValues = "";
-
-        Object.keys(data).forEach(function (key) {
-            if (key !== "user_id" && key !== "action_time") {
-                updateValues += key + ((typeof (data[key]) === "string" || typeof (data[key]) === "object") ? `='${data[key]}' AND ` : `=${data[key]} AND `);
-            }
-        });
-
-        updateValues = updateValues.slice(0, updateValues.length - 4);
-
-        let sql = `UPDATE ${this.table} SET ${updateValues} WHERE user_id='${data.user_id}' AND action_time='${data.action_time}'`;
-
-        console.log(sql);
-
-        try {
-
-            let result = await db.query(sql);
-
-            return result.rowCount > 0;
-
-        } catch (e) {
-            return e.message;
-        }
-    };
+      return result.rowCount > 0;
+    } catch (e) {
+      return e.message;
+    }
+  };
 }
 
 module.exports = Presence;
